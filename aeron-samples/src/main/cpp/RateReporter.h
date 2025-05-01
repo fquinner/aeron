@@ -34,10 +34,11 @@ class RateReporter
 public:
     typedef std::function<void(double, double, std::int64_t, std::int64_t)> on_rate_report_t;
 
-    RateReporter(nanoseconds reportInterval, const on_rate_report_t &onReport) :
+    RateReporter(nanoseconds reportInterval, const on_rate_report_t &onReport, std::int64_t nanosleep = samples::configuration::DEFAULT_SUBSCRIPTION_NANO_SLEEP) :
         m_reportInterval(reportInterval),
         m_onReport(onReport),
-        m_lastTimestamp(steady_clock::now())
+        m_lastTimestamp(steady_clock::now()),
+        m_nanoSleep(nanosleep)
     {
         static_cast<void>(m_paddingBefore);
         static_cast<void>(m_paddingAfter);
@@ -92,6 +93,9 @@ public:
 
         std::atomic_store_explicit(&m_totalBytes, totalBytes + bytes, std::memory_order_release);
         std::atomic_store_explicit(&m_totalMessages, totalMessages + messages, std::memory_order_release);
+        if (m_nanoSleep > 0) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(m_nanoSleep));
+        }
     }
 
 private:
@@ -108,6 +112,8 @@ private:
     std::int64_t m_lastTotalMessages = 0;
 
     steady_clock::time_point m_lastTimestamp;
+
+    std::int64_t m_nanoSleep = samples::configuration::DEFAULT_SUBSCRIPTION_NANO_SLEEP;
 };
 
 }

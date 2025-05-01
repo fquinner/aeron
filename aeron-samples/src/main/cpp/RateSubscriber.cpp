@@ -42,6 +42,7 @@ static const char optPrefix = 'p';
 static const char optChannel = 'c';
 static const char optStreamId = 's';
 static const char optFrags = 'f';
+static const char optNSleep = 'n';
 
 struct Settings
 {
@@ -49,6 +50,7 @@ struct Settings
     std::string channel = samples::configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
+    std::int64_t onFragmentNanoSleep = samples::configuration::DEFAULT_PUBLICATION_NANO_SLEEP;
 };
 
 Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
@@ -66,6 +68,7 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
     s.channel = cp.getOption(optChannel).getParam(0, s.channel);
     s.streamId = cp.getOption(optStreamId).getParamAsInt(0, 1, INT32_MAX, s.streamId);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
+    s.onFragmentNanoSleep = cp.getOption(optNSleep).getParamAsLong(0, 0, INT64_MAX, s.onFragmentNanoSleep);
 
     return s;
 }
@@ -94,6 +97,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optChannel,  1, 1, "channel         Channel."));
     cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
     cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
+    cp.addOption(CommandOption(optNSleep,   1, 1, "nanoseconds     Time to sleep between fragments in nanoseconds.."));
 
     std::shared_ptr<std::thread> rateReporterThread;
 
@@ -144,7 +148,7 @@ int main(int argc, char **argv)
         }
 
         BusySpinIdleStrategy idleStrategy;
-        RateReporter rateReporter(std::chrono::seconds(1), printRate);
+        RateReporter rateReporter(std::chrono::seconds(1), printRate,  settings.onFragmentNanoSleep);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         fragment_handler_t handler = fragmentAssembler.handler();
         Subscription *subscriptionPtr = subscription.get();

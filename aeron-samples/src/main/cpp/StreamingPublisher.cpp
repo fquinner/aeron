@@ -46,6 +46,7 @@ static const char optLinger   = 'l';
 static const char optLength   = 'L';
 static const char optRandLen  = 'r';
 static const char optProgress = 'P';
+static const char optNSleep   = 'n';
 
 struct Settings
 {
@@ -57,6 +58,7 @@ struct Settings
     int lingerTimeoutMs = samples::configuration::DEFAULT_LINGER_TIMEOUT_MS;
     bool randomMessageLength = samples::configuration::DEFAULT_RANDOM_MESSAGE_LENGTH;
     bool progress = samples::configuration::DEFAULT_PUBLICATION_RATE_PROGRESS;
+    std::int64_t onFragmentNanoSleep = samples::configuration::DEFAULT_SUBSCRIPTION_NANO_SLEEP;
 };
 
 Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
@@ -78,6 +80,7 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
     s.lingerTimeoutMs = cp.getOption(optLinger).getParamAsInt(0, 0, 60 * 60 * 1000, s.lingerTimeoutMs);
     s.randomMessageLength = cp.getOption(optRandLen).isPresent();
     s.progress = cp.getOption(optProgress).isPresent();
+    s.onFragmentNanoSleep = cp.getOption(optNSleep).getParamAsLong(0, 0, INT64_MAX, s.onFragmentNanoSleep);
 
     return s;
 }
@@ -127,6 +130,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
     cp.addOption(CommandOption(optLength,   1, 1, "length          Length of Messages."));
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
+    cp.addOption(CommandOption(optNSleep,   1, 1, "nanoseconds     Time to sleep between offers in nanoseconds.."));
 
     std::shared_ptr<std::thread> rateReporterThread;
 
@@ -216,6 +220,9 @@ int main(int argc, char **argv)
                     }
 
                     offerIdleStrategy.idle();
+                }
+                if (settings.onFragmentNanoSleep > 0) {
+                    std::this_thread::sleep_for(std::chrono::nanoseconds(settings.onFragmentNanoSleep));
                 }
 
                 rateReporter.onMessage(1, length);

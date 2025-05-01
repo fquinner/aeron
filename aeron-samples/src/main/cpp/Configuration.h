@@ -35,6 +35,8 @@ const static int DEFAULT_LINGER_TIMEOUT_MS = 0;
 const static int DEFAULT_FRAGMENT_COUNT_LIMIT = 10;
 const static bool DEFAULT_RANDOM_MESSAGE_LENGTH = false;
 const static bool DEFAULT_PUBLICATION_RATE_PROGRESS = false;
+const static std::int64_t DEFAULT_PUBLICATION_NANO_SLEEP = -1;
+const static std::int64_t DEFAULT_SUBSCRIPTION_NANO_SLEEP = -1;
 
 }}}
 
